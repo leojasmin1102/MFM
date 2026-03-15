@@ -12,7 +12,6 @@ class FrontendAssets:
 * { box-sizing: border-box; }
 body { margin:0; font-family:"Segoe UI","PingFang SC",sans-serif; color:var(--ink); background:linear-gradient(140deg,#d9c9ab,#b7a48a); min-height:100vh; display:grid; place-items:center; padding:24px; }
 .notebook { width:min(780px,100%); background:repeating-linear-gradient(to bottom,transparent 0,transparent 37px,var(--line) 38px,var(--line) 39px),var(--paper); border-radius:12px; padding:28px 32px; box-shadow:0 20px 50px rgba(30,20,10,.25); border:1px solid #dbc89e; position:relative; }
-.notebook::before { content:""; position:absolute; top:0; left:56px; bottom:0; width:2px; background:rgba(182,88,79,.55); }
 header h1 { margin:0; font-size:1.8rem; }
 header p { margin-top:8px; margin-bottom:20px; color:#604f4f; }
 .salary-row,.budget-item { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
