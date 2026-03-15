@@ -5,6 +5,7 @@ from decimal import Decimal
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlparse
 
+from .ai import AdviceGenerator, AdvicePromptBuilder
 from .constants import DEFAULT_BUDGETS
 from .frontend import FinancePageRenderer
 from .parsers import FinanceApiParser, FinanceFormParser
@@ -14,6 +15,8 @@ from .service import FinanceService
 class FinanceHandler(BaseHTTPRequestHandler):
     service = FinanceService(DEFAULT_BUDGETS)
     renderer = FinancePageRenderer()
+    prompt_builder = AdvicePromptBuilder()
+    advice_generator = AdviceGenerator()
 
     def do_GET(self):
         path = urlparse(self.path).path
@@ -26,6 +29,9 @@ class FinanceHandler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         if path == "/api/calculate":
             self._handle_api_calculate()
+            return
+        if path == "/api/advice":
+            self._handle_api_advice()
             return
         if path == "/calculate":
             self._handle_form_calculate()
@@ -58,6 +64,27 @@ class FinanceHandler(BaseHTTPRequestHandler):
         summary = self.service.build_summary(salary, budgets)
         self._send_json(
             {
+                "salary": str(summary.salary),
+                "total": str(summary.total),
+                "remaining": str(summary.remaining),
+                "budgets": [
+                    {"label": label, "amount": str(amount)}
+                    for label, amount in summary.budgets.items()
+                ],
+            }
+        )
+
+
+    def _handle_api_advice(self):
+        raw_data = self._read_body()
+        salary, budgets = FinanceApiParser.parse_json(raw_data)
+        summary = self.service.build_summary(salary, budgets)
+        prompt = self.prompt_builder.build(summary)
+        advice = self.advice_generator.generate(prompt)
+        self._send_json(
+            {
+                "advice": advice,
+                "prompt": prompt,
                 "salary": str(summary.salary),
                 "total": str(summary.total),
                 "remaining": str(summary.remaining),
