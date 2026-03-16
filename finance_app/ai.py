@@ -2,6 +2,14 @@ from __future__ import annotations
 
 from .domain import FinanceSummary
 
+import os
+from openai import OpenAI
+
+
+client = OpenAI(
+    api_key="hahahayongdeshihouzaitian",
+    base_url="https://api.deepseek.com")
+
 
 class AdvicePromptBuilder:
     @staticmethod
@@ -29,9 +37,11 @@ class AdviceGenerator:
     """默认实现：返回 prompt，方便后续接入真实大模型。"""
 
     def generate(self, prompt: str) -> str:
-        return (
-            "尚未接入 AI 大模型。你可以在 finance_app/ai.py 的 AdviceGenerator.generate "
-            "中调用你的模型接口，并返回消费建议。\n\n"
-            "当前发送给模型的提示词如下：\n"
-            f"{prompt}"
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            stream=False
         )
+        return response.choices[0].message.content
