@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from decimal import Decimal
 from http.server import BaseHTTPRequestHandler
+from pathlib import Path
 from urllib.parse import urlparse
 
 from .ai import AdviceGenerator, AdvicePromptBuilder
@@ -13,6 +14,7 @@ from .service import FinanceService
 
 
 class FinanceHandler(BaseHTTPRequestHandler):
+    static_dir = Path(__file__).parent / "static"
     service = FinanceService(DEFAULT_BUDGETS)
     renderer = FinancePageRenderer()
     prompt_builder = AdvicePromptBuilder()
@@ -22,6 +24,9 @@ class FinanceHandler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         if path == "/":
             self._serve_page()
+            return
+        if path.startswith("/static/"):
+            self._serve_static(path)
             return
         self._send_json({"error": "Not Found"}, status=404)
 
@@ -46,6 +51,26 @@ class FinanceHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(html)))
         self.end_headers()
         self.wfile.write(html)
+
+
+    def _serve_static(self, path: str):
+        file_path = (self.static_dir / path.removeprefix("/static/")).resolve()
+        if not str(file_path).startswith(str(self.static_dir.resolve())) or not file_path.is_file():
+            self._send_json({"error": "Not Found"}, status=404)
+            return
+
+        content_type = "application/octet-stream"
+        if file_path.suffix == ".js":
+            content_type = "application/javascript; charset=utf-8"
+        elif file_path.suffix == ".css":
+            content_type = "text/css; charset=utf-8"
+
+        payload = file_path.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
 
     def _handle_form_calculate(self):
         raw_data = self._read_body()
@@ -73,7 +98,6 @@ class FinanceHandler(BaseHTTPRequestHandler):
                 ],
             }
         )
-
 
     def _handle_api_advice(self):
         raw_data = self._read_body()
